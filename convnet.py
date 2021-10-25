@@ -206,3 +206,14 @@ history = model.fit_generator(
 # Saving the model
 model.save('cats_and_dogs_small_2.h5')
 
+###################################################################################
+########## PREDICTION #############################################################
+###################################################################################
+
+def predict_animal(img_path, model):    
+    categories = ['Cat', 'Dog']
+    img = image.load_img(img_path, target_size=(150,150))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    pred = categories[int(model.predict(x)[0][0])]
+    return pred

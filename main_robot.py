@@ -4,7 +4,7 @@ from qibullet import PepperVirtual
 import pybullet as p
 import cv2
 import time
-
+import convnet
 
 if __name__ == "__main__":
     simulation_manager = SimulationManager()
