@@ -15,12 +15,11 @@ import os, shutil
 ###################################################################################
 
 # You need to specify where's your project directory
-pdir = '/Users/Lucas/Desktop/IML/Projet_IML_Robot/'
+pdir = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/Projet_IML_Robot_Detection'
 
 # The directory where you uncompressed the dogs vs cats dataset
 # Yours will be different
-original_dataset_dir = '/Users/Lucas/Desktop/IML/kaggle_dataset_dogs_vs_cats_uncompressed/train'
-
+original_dataset_dir = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/kaggle_dataset_dogs_vs_cats_uncompressed/train'
 ###################################################################################
 ########## CREATING DIRECTORIES ###################################################
 ###################################################################################
