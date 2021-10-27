@@ -12,6 +12,8 @@ import numpy as np
 
 # Chemin vers le dataset de Test de kaggle (à changer suivant l'utilisateur)
 kaggleTestDatasetPath = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/kaggle_dataset_dogs_vs_cats_uncompressed/test'
+predState = False
+imgIsThere = False
 
 if __name__ == "__main__":
     simulation_manager = SimulationManager()
@@ -38,11 +40,15 @@ if __name__ == "__main__":
 
 
     # Fonction de prédiction
-    def predict_animal(img_path, model):    
-        categories = ['Cat', 'Dog']
-        img = image.load_img(img_path, target_size=(150,150))
-        x = image.img_to_array(img)
+    def predict_animal(img, model):    
+        categories = ['Chat', 'Chien']
+        #img = image.load_img(img_path, target_size=(150,150))
+        x = cv2.resize(img, (150,150), interpolation = cv2.INTER_AREA)
+        #x = np.asarray(img)
+        x = image.img_to_array(x)
         x = np.expand_dims(x, axis=0)
+        #x = np.concatenate((x, 3), axis=None)
+        #x = x * (1./255)
         pred = categories[int(model.predict(x)[0][0])]
         return pred
 
@@ -59,6 +65,7 @@ if __name__ == "__main__":
             baseOrientation=p.getQuaternionFromEuler(orientation))
         # On applique la texture à l'objet (On affiche l'image sur l'objet qui sert ici de tableau)
         p.changeVisualShape(multiBodyId, -1, textureUniqueId=textureUniqueId)
+        return multiBodyId
 
     """ 
     L'objet quad.obj a été créé par Tristan Guichaoua qui l'a gentiment mit à disposition de la classe.
@@ -69,20 +76,43 @@ if __name__ == "__main__":
         while True:
             capture = pepper.getCameraFrame(handle)
             cv2.imshow("Top camera", capture)
+            cv2.waitKey(1)
 
             # On appuie sur la touche C pour changer d'image aléatoirement
-            if keyboard.is_pressed('c'):
-                # L'image met quelques secondes à charger
-                print("Vous avez demandé une nouvelle image. Veuillez patienter.")
-                random_file = random.choice(os.listdir(kaggleTestDatasetPath))
-                newTextureId = kaggleTestDatasetPath+'/'+random_file
-                create_picture(position=[3,0,1], orientation=[0,0,0], new_img_path=newTextureId)
-            
-            #if keyboard.is_pressed('v'):
+            if imgIsThere==False :
+                if keyboard.is_pressed('c'):
+                    if predState==False:
+                        # L'image met quelques secondes à charger
+                        print("Vous avez demandé une image. Veuillez patienter.")
+                        random_file = random.choice(os.listdir(kaggleTestDatasetPath))
+                        newTextureId = kaggleTestDatasetPath+'/'+random_file
+                        img = create_picture(position=[2,0,1], orientation=[0,0,0], new_img_path=newTextureId)
+                        print("L'image est arrivée saine et sauve. Bisous.")
+                        imgIsThere = True
+            else:
+                if keyboard.is_pressed('c'):
+                    if predState==False:
+                        print("Suppression de l'image précédente.")
+                        p.removeBody(img)
+                        imgIsThere = False
+                        print("Vous avez demandé une nouvelle image. Veuillez patienter.")
+                        random_file = random.choice(os.listdir(kaggleTestDatasetPath))
+                        newTextureId = kaggleTestDatasetPath+'/'+random_file
+                        img = create_picture(position=[2,0,1], orientation=[0,0,0], new_img_path=newTextureId)
+                        print("La nouvelle image est arrivée saine et sauve. Re-bisous.")
+                        imgIsThere = True
+
+                    
+            if keyboard.is_pressed('x'):
+                predState = True
+                print("Début de la prédiction")
+                a = predict_animal(capture, model)
+                print("Pepper a prédit : ", a)
+                # p.removeBody(img)
+                # print("img removed")
+                predState = False
+                print("Arrêt de la prédiction")
+                
             
     except KeyboardInterrupt:
         simulation_manager.stopSimulation(client_id)
-
-
-
-        
