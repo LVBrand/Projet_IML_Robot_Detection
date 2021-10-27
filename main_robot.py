@@ -5,188 +5,84 @@ import pybullet as p
 import cv2
 import time
 import keyboard
-
-import os, shutil
-import tensorflow as tf
-from keras import layers, models, optimizers
-from keras.preprocessing.image import ImageDataGenerator
-import matplotlib.pyplot as plt
+import os, shutil, random
+from keras import models
 from keras.preprocessing import image
 import numpy as np
 
+# Chemin vers le dataset de Test de kaggle (à changer suivant l'utilisateur)
+kaggleTestDatasetPath = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/kaggle_dataset_dogs_vs_cats_uncompressed/test'
 
 if __name__ == "__main__":
     simulation_manager = SimulationManager()
     client_id = simulation_manager.launchSimulation(gui=True)
 
-# Pepper, le gentil robot
-pepper = simulation_manager.spawnPepper(
-    client_id,
-    spawn_ground_plane=True)
+    # Pepper, le gentil robot
+    pepper = simulation_manager.spawnPepper(
+        client_id,
+        spawn_ground_plane=True)
 
+    # On se connecte
+    p.connect(p.DIRECT)
 
-# Création d'une camera
-handle = pepper.subscribeCamera(PepperVirtual.ID_CAMERA_TOP)
+    # Création d'une camera
+    handle = pepper.subscribeCamera(PepperVirtual.ID_CAMERA_TOP)
 
-# Laser
-pepper.showLaser(True)
-pepper.subscribeLaser()
+    # Laser
+    pepper.showLaser(True)
+    pepper.subscribeLaser()
 
-
-# Choisir aléatoirement une image parmi les données de test
-# Mettre l'image sur un cube
-# L'image change aléatoirement quand on appuie sur un bouton
-# Le robot se déplace jusqu'à devant le cube portant l'image
-# On capture ce que voit le robot par sa camera
-# On utilise la fonction predict_animal() sur l'image (avec un boutton)
-# Suivant la prédiction, on entend un son de chat ou de chien
-
-# Load our train CNN model
-model = models.load_model("cats_and_dogs_full.h5")
-
-# Prediction
-def predict_animal(img_path, model):    
-    categories = ['Cat', 'Dog']
-    img = image.load_img(img_path, target_size=(150,150))
-    x = image.img_to_array(img)
-    x = np.expand_dims(x, axis=0)
-    pred = categories[int(model.predict(x)[0][0])]
-    return pred
+    # On charge notre modèle de convnet entraîné sur 25000 images
+    model = models.load_model("cats_and_dogs_full.h5")
 
 
 
-# ##############################################################################################
-# #### Creating Cat and Dog objects ############################################################
-# ##############################################################################################
+    # Fonction de prédiction
+    def predict_animal(img_path, model):    
+        categories = ['Cat', 'Dog']
+        img = image.load_img(img_path, target_size=(150,150))
+        x = image.img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        pred = categories[int(model.predict(x)[0][0])]
+        return pred
 
+    # On définit une fonction qui instancie un objet affichant une image à faire prédire
+    def create_picture(position, orientation, new_img_path):
+        # On instancie un mesh à partir de l'objet quad.obj
+        visualShapeId = p.createVisualShape(p.GEOM_MESH, fileName='./obj/quad.obj')
+        # On charge la texture (ici, l'image qu'on veut faire prédire)
+        textureUniqueId = p.loadTexture(new_img_path)
+        # On crée l'objet en lui donnant une position, une orientation et une forme
+        multiBodyId = p.createMultiBody(
+            baseVisualShapeIndex=visualShapeId,
+            basePosition=position,
+            baseOrientation=p.getQuaternionFromEuler(orientation))
+        # On applique la texture à l'objet (On affiche l'image sur l'objet qui sert ici de tableau)
+        p.changeVisualShape(multiBodyId, -1, textureUniqueId=textureUniqueId)
 
-# Creating a cube
+    """ 
+    L'objet quad.obj a été créé par Tristan Guichaoua qui l'a gentiment mit à disposition de la classe.
+    Merci à lui, il m'a fait économiser pas mal de temps ;-)
+    """
 
-cubeTextureId = p.loadTexture('./obj/dog_2_object/Australian_Cattle_Dog_dif.jpg')
+    try:
+        while True:
+            capture = pepper.getCameraFrame(handle)
+            cv2.imshow("Top camera", capture)
 
-visualShapeId = p.createVisualShape(
-    p.GEOM_BOX,
-    halfExtents = [1,1,2],
-    rgbaColor=None)
+            # On appuie sur la touche C pour changer d'image aléatoirement
+            if keyboard.is_pressed('c'):
+                # L'image met quelques secondes à charger
+                print("Vous avez demandé une nouvelle image. Veuillez patienter.")
+                random_file = random.choice(os.listdir(kaggleTestDatasetPath))
+                newTextureId = kaggleTestDatasetPath+'/'+random_file
+                create_picture(position=[3,0,1], orientation=[0,0,0], new_img_path=newTextureId)
+            
+            #if keyboard.is_pressed('v'):
+            
+    except KeyboardInterrupt:
+        simulation_manager.stopSimulation(client_id)
 
-multiBodyId = p.createMultiBody(
-    baseVisualShapeIndex = visualShapeId,
-    basePosition=[0,5,0],
-    baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-
-
-p.changeVisualShape(multiBodyId, -1, textureUniqueId=cubeTextureId)
-
-
-
-# # Visual Shape
-# cat1_visualShapeId = p.createVisualShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/cat_1_object/12222_Cat_v1_l3.obj',
-#     rgbaColor=None,
-#     meshScale=[0.01, 0.01, 0.01])
-
-# cat2_visualShapeId = p.createVisualShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/cat_2_object/12221_Cat_v1_l3.obj',
-#     rgbaColor=None,
-#     meshScale=[0.01, 0.01, 0.01])
-
-# dog1_visualShapeId = p.createVisualShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/dog_1_object/13466_Canaan_Dog_v1_L3.obj',
-#     rgbaColor=None,
-#     meshScale=[0.01, 0.01, 0.01])
-
-# dog2_visualShapeId = p.createVisualShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/dog_2_object/13463_Australian_Cattle_Dog_v3.obj',
-#     rgbaColor=None,
-#     meshScale=[0.01, 0.01, 0.01])
-
-
-
-# # Collision Shape
-# cat1_collisionShapeId = p.createCollisionShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/cat_1_object/12222_Cat_v1_l3.obj',
-#     meshScale=[0.01, 0.01, 0.01])
-
-# cat2_collisionShapeId = p.createCollisionShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/cat_2_object/12221_Cat_v1_l3.obj',
-#     meshScale=[0.01, 0.01, 0.01])
-
-# dog1_collisionShapeId = p.createCollisionShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/dog_1_object/13466_Canaan_Dog_v1_L3.obj',
-#     meshScale=[0.01, 0.01, 0.01])
-
-# dog2_collisionShapeId = p.createCollisionShape(
-#     shapeType = p.GEOM_MESH,
-#     fileName = './obj/dog_2_object/13463_Australian_Cattle_Dog_v3.obj',
-#     meshScale=[0.01, 0.01, 0.01])
-
-
-
-# # Multi Body
-
-
-# cat1_multiBodyId = p.createMultiBody(
-#     baseMass=1.0,
-#     baseCollisionShapeIndex=cat1_collisionShapeId,
-#     baseVisualShapeIndex=cat1_visualShapeId,
-#     basePosition=[0,0,1],
-#     baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-
-# cat2_multiBodyId = p.createMultiBody(
-#     baseMass=1.0,
-#     baseCollisionShapeIndex=cat2_collisionShapeId,
-#     baseVisualShapeIndex=cat2_visualShapeId,
-#     basePosition=[0,0,3],
-#     baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-
-# dog1_multiBodyId = p.createMultiBody(
-#     baseMass=1.0,
-#     baseCollisionShapeIndex=dog1_collisionShapeId,
-#     baseVisualShapeIndex=dog1_visualShapeId,
-#     basePosition=[0,0,5],
-#     baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-
-# dog2_multiBodyId = p.createMultiBody(
-#     baseMass=1.0,
-#     baseCollisionShapeIndex=dog2_collisionShapeId,
-#     baseVisualShapeIndex=dog2_visualShapeId,
-#     basePosition=[0,0,7],
-#     baseOrientation=p.getQuaternionFromEuler([0, 0, 0]))
-
-
-
-# # Textures
-# cat1_textureId = p.loadTexture('./obj/cat_1_object/Cat_diffuse.jpg')
-# cat2_textureId = p.loadTexture('./obj/cat_2_object/Cat_diffuse.jpg')
-# dog1_textureId = p.loadTexture('./obj/dog_1_object/13466_Canaan_Dog_diff.jpg')
-# dog2_textureId = p.loadTexture('./obj/dog_2_object/Australian_Cattle_Dog_dif.jpg')
-
-# p.changeVisualShape(cat1_visualShapeId, -1, textureUniqueId=cat1_textureId)
-# p.changeVisualShape(cat2_visualShapeId, -1, textureUniqueId=cat2_textureId)
-# p.changeVisualShape(dog1_visualShapeId, -1, textureUniqueId=dog1_textureId)
-# p.changeVisualShape(dog2_visualShapeId, -1, textureUniqueId=dog2_textureId)
-
-p.setGravity(0, 0, -9.8)
-
-p.setRealTimeSimulation(1)
-
-
-
-# try:
-#     while True:
-#         img = pepper.getCameraFrame(handle)
-#         cv.imshow('top camera', img)
-
-#         # if keyboard.is_pressed('p'):
-#         #     print('Predicting animal')
-#         #     predict_animal(img_path, model)
 
 
         
