@@ -36,7 +36,7 @@ if __name__ == "__main__":
     pepper.showLaser(True)
     pepper.subscribeLaser()
 
-    # On charge notre modèle de convnet entraîné sur 25000 images
+    # On charge notre modèle de convnet entraîné sur 25 000 images
     model = models.load_model("cats_and_dogs_full.h5")
 
 
