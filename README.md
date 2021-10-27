@@ -8,6 +8,6 @@ Installs :
 Dataset used :
 https://www.kaggle.com/harishvutukuri/dogs-vs-wolves
 
-Ressources used :
-Deep Learning with Python (first edition) - by François Chollet
+Resources used :
+Deep Learning with Python - by François Chollet
 
