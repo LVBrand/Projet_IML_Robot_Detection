@@ -110,9 +110,15 @@ if __name__ == "__main__":
                 # Pepper miaule 
                 if a == 'Chat':
                     print('Miaou :3')
+                    pepper.goToPosture("Crouch", 0.6)
+                    time.sleep(1)
+                    pepper.goToPosture("Stand", 0.6)
                 # Pepper aboie
                 else :
                     print('BARK! BARK! BARK!')
+                    pepper.goToPosture("StandZero", 0.6)
+                    time.sleep(1)
+                    pepper.goToPosture("Stand", 0.6)
                 predState = False
                 print("Fin de la prédiction.")
                 
