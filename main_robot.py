@@ -1,4 +1,4 @@
-# installer : qibullet, opencv-contrib-python (avec pip)
+# installer : qibullet, opencv-contrib-python, playsound (avec pip)
 from qibullet import SimulationManager
 from qibullet import PepperVirtual
 import pybullet as p
@@ -9,6 +9,7 @@ import os, shutil, random
 from keras import models
 from keras.preprocessing import image
 import numpy as np
+
 
 # Chemin vers le dataset de Test de kaggle (à changer suivant l'utilisateur)
 kaggleTestDatasetPath = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/kaggle_dataset_dogs_vs_cats_uncompressed/test'
@@ -31,10 +32,6 @@ if __name__ == "__main__":
 
     # Création d'une camera
     handle = pepper.subscribeCamera(PepperVirtual.ID_CAMERA_TOP)
-
-    # Laser
-    pepper.showLaser(True)
-    pepper.subscribeLaser()
 
     # On charge notre modèle de convnet entraîné sur 25 000 images
     model = models.load_model("cats_and_dogs_full.h5")
@@ -64,7 +61,7 @@ if __name__ == "__main__":
             baseVisualShapeIndex=visualShapeId,
             basePosition=position,
             baseOrientation=p.getQuaternionFromEuler(orientation))
-         p.changeVisualShape(multiBodyId, -1, textureUniqueId=textureUniqueId)
+        p.changeVisualShape(multiBodyId, -1, textureUniqueId=textureUniqueId)
         return multiBodyId
 
     """ 
@@ -110,8 +107,12 @@ if __name__ == "__main__":
                 print("Début de la prédiction...")
                 a = predict_animal(capture, model)
                 print("Pepper a prédit : ", a)
-                # p.removeBody(img)
-                # print("img removed")
+                # Pepper miaule 
+                if a == 'Chat':
+                    print('Miaou :3')
+                # Pepper aboie
+                else :
+                    print('BARK! BARK! BARK!')
                 predState = False
                 print("Fin de la prédiction.")
                 
