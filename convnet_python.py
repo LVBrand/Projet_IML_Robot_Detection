@@ -1,34 +1,42 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[15]:
 
 
 import os, shutil
-import tensorflow as tf
 from keras import layers, models, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 from keras.preprocessing import image
 import numpy as np
+from sklearn.metrics import confusion_matrix, classification_report
 
 
 # # Loading Data
 
-# In[5]:
+# In[3]:
 
 
 # You need to specify where's your project directory
+# Laptop
 pdir = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/Projet_IML_Robot_Detection'
 
+# Desktop computer
+#pdir = '/Users/Lucas/Desktop/IML/Projet_IML_Robot'
+
+
 # The directory where you uncompressed the dogs vs cats dataset
-# Yours will be different
+# Laptop
 original_dataset_dir = '/Users/Lucas/Documents/Cours/S9 - SIIA/IML - Interactive Machine Learning/Projet_IML_Robot/kaggle_dataset_dogs_vs_cats_uncompressed/train'
+
+# Desktop computer
+#original_dataset_dir = '/Users/Lucas/Desktop/kaggle_dataset_dogs_vs_cats_uncompressed/train'
 
 
 # ### Creating directories
 
-# In[6]:
+# In[4]:
 
 
 # Directory where you'll store your smaller dataset
@@ -84,7 +92,7 @@ if (os.path.exists(pdir+'data/test/dogs'))==False:
 
 # ### Copying images to training, validation, and test directories
 
-# In[7]:
+# In[5]:
 
 
 # Copy the first 6250 cat images to train_cats_dir
@@ -149,7 +157,32 @@ print('total test dog images :', len(os.listdir(test_dogs_dir)))
 
 # # Data Preprocessing
 
-# In[5]:
+# In[6]:
+
+
+# Number of samples per dataset
+train_samples_nb = len(os.listdir(train_dogs_dir)) + len(os.listdir(train_cats_dir))
+val_samples_nb = len(os.listdir(validation_dogs_dir)) + len(os.listdir(validation_cats_dir))
+test_samples_nb = len(os.listdir(test_dogs_dir)) + len(os.listdir(test_cats_dir))
+print('# Train samples :', train_samples_nb)
+print('# Validation samples :', val_samples_nb)
+print('# Test samplles :', test_samples_nb)
+
+# Image Resolution
+img_width = 150
+img_height = 150
+print('Image resolution :', img_width, 'x', img_height)
+
+# Define the numbers of samples per batch
+batch_size = 50
+print('Batch size :', batch_size)
+
+# Number of epochs
+epochs = 100
+print('Number of epochs :', epochs)
+
+
+# In[7]:
 
 
 # Data Augmentation and rescaling it
@@ -168,27 +201,28 @@ test_datagen = ImageDataGenerator(rescale=1./255)
 # Generating train data
 train_generator = train_datagen.flow_from_directory(
     train_dir,
-    target_size=(150, 150), # Resizes the data
-    batch_size=50, # Making 50-samples batches
+    target_size=(img_width, img_height), # Resizes the data
+    batch_size=batch_size, # Making 50-samples batches
     class_mode='binary')
 
-# Generating validation data
+# Generating validation data 
 validation_generator = test_datagen.flow_from_directory(
     validation_dir,
-    target_size=(150, 150), 
-    batch_size=50,
-    class_mode='binary')
+    target_size=(img_width, img_height), 
+    batch_size=batch_size,
+    class_mode='binary',
+    shuffle=False) # We want the samples to have the same order to calculate confusion matrix
 
 
 # ### Instantiating a Convnet
 
-# In[13]:
+# In[8]:
 
 
 # Model
 model = models.Sequential()
 
-model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(img_width, img_height, 3)))
 model.add(layers.MaxPooling2D((2, 2)))
 
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
@@ -215,26 +249,26 @@ model.compile(loss='binary_crossentropy',
 
 # ### Fitting the model
 
-# In[7]:
+# In[12]:
 
 
 # Fit the model
 history = model.fit(
     train_generator,
-    steps_per_epoch=250,
-    epochs=100,
+    steps_per_epoch=train_samples_nb // batch_size,
+    epochs=epochs,
     validation_data=validation_generator,
-    validation_steps=50)
+    validation_steps=val_samples_nb // batch_size)
 
 
-# In[10]:
+# In[13]:
 
 
 # saving the model
-model.save('cats_and_dogs_full.h5')
+model.save('catvdog_full_100_epochs.h5')
 
 
-# In[11]:
+# In[14]:
 
 
 # Displaying curbes of loss and accuracy during training
